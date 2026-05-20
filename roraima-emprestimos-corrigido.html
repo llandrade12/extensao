@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roraima • Gestão de Empréstimos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;
+    --accent:#f0c040;--accent2:#ff6b35;--green:#3ddc97;--red:#ff4d6d;--blue:#4d9fff;
+    --text:#e8e8f0;--muted:#6b6b85;
+    --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden;}
+
+  /* SETUP */
+  #setup-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
+  .setup-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem;width:100%;max-width:580px;}
+  .setup-logo{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--accent);margin-bottom:0.25rem;}
+  .setup-sub{color:var(--muted);font-size:0.85rem;margin-bottom:2rem;}
+  .step{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem;}
+  .step-num{font-family:var(--font-head);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.4rem;}
+  .step-text{font-size:.84rem;color:var(--text);line-height:1.7;}
+  .step-text code{background:var(--bg);padding:.1rem .4rem;border-radius:4px;color:var(--accent);font-family:var(--font-mono);}
+  .url-input-wrap{margin-top:.75rem;display:flex;gap:.5rem;}
+  .url-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem;color:var(--text);font-family:var(--font-mono);font-size:.82rem;outline:none;}
+  .url-input:focus{border-color:var(--accent);}
+  .url-input::placeholder{color:var(--muted);}
+
+  /* HEADER */
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;}
+  .logo{font-family:var(--font-head);font-size:1.3rem;font-weight:800;letter-spacing:-.03em;color:var(--accent);display:flex;align-items:center;gap:.5rem;}
+  .logo span{color:var(--text);font-weight:400;}
+  .header-right{display:flex;gap:.75rem;align-items:center;}
+  .sync-status{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.4rem;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s;}
+  .sync-dot.ok{background:var(--green);}
+  .sync-dot.loading{background:var(--accent);animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;overflow-x:auto;}
+  .tab{padding:.9rem 1.4rem;cursor:pointer;font-family:var(--font-head);font-size:.85rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;letter-spacing:.03em;text-transform:uppercase;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  main{padding:2rem;max-width:1600px;margin:0 auto;}
+
+  /* CARDS */
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem;position:relative;overflow:hidden;}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+  .card.green::before{background:var(--green);}
+  .card.red::before{background:var(--red);}
+  .card.blue::before{background:var(--blue);}
+  .card.orange::before{background:var(--accent2);}
+  .card-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;}
+  .card-value{font-family:var(--font-head);font-size:1.9rem;font-weight:800;color:var(--text);letter-spacing:-.03em;}
+  .card-sub{font-size:.75rem;color:var(--muted);margin-top:.25rem;}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;gap:.75rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .search-box{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-family:var(--font-mono);font-size:.85rem;outline:none;transition:border-color .15s;}
+  .search-box:focus{border-color:var(--accent);}
+  .search-box::placeholder{color:var(--muted);}
+  select.filter{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-family:var(--font-mono);font-size:.85rem;outline:none;cursor:pointer;}
+
+  /* BTN */
+  .btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:.6rem 1.2rem;font-family:var(--font-head);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.02em;display:inline-flex;align-items:center;gap:.4rem;}
+  .btn:hover{background:#ffd060;transform:translateY(-1px);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn.secondary:hover{background:var(--border);}
+  .btn.danger{background:var(--red);color:#fff;}
+  .btn.green-btn{background:var(--green);color:#000;}
+  .btn.green-btn:hover{background:#5fffa8;}
+  .btn.sm{padding:.45rem .85rem;font-size:.78rem;}
+
+  /* TABLE */
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  thead{background:var(--surface2);}
+  th{padding:.85rem 1rem;text-align:left;font-family:var(--font-head);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);}
+  th:hover{color:var(--accent);}
+  td{padding:.75rem 1rem;border-bottom:1px solid rgba(42,42,58,.5);vertical-align:middle;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(240,192,64,.03);}
+  .nome-cell{font-family:var(--font-head);font-weight:600;font-size:.82rem;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+  .cpf-cell{color:var(--muted);font-size:.78rem;}
+  .money{font-family:var(--font-mono);font-weight:500;}
+  .money.pos{color:var(--green);}
+  .money.neg{color:var(--red);}
+  .money.neu{color:var(--text);}
+
+  .badge{display:inline-block;padding:.2rem .55rem;border-radius:4px;font-size:.7rem;font-weight:600;font-family:var(--font-head);letter-spacing:.04em;}
+  .badge-ok{background:rgba(61,220,151,.15);color:var(--green);}
+  .badge-warn{background:rgba(255,107,53,.15);color:var(--accent2);}
+  .badge-danger{background:rgba(255,77,109,.15);color:var(--red);}
+  .badge-info{background:rgba(77,159,255,.15);color:var(--blue);}
+  .badge-grey{background:rgba(107,107,133,.15);color:var(--muted);}
+
+  .row-actions{display:flex;gap:.4rem;}
+  .icon-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .12s;}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .icon-btn.red:hover{border-color:var(--red);color:var(--red);}
+
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted);}
+  .page-btns{display:flex;gap:.4rem;}
+  .page-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font-mono);font-size:.8rem;transition:all .12s;}
+  .page-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .page-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform .2s;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-header{padding:1.5rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+  .modal-title{font-family:var(--font-head);font-size:1.1rem;font-weight:800;}
+  .close-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+  .close-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
+  .modal-body{padding:1.5rem;}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  .form-group{display:flex;flex-direction:column;gap:.4rem;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-family:var(--font-head);font-weight:600;}
+  input,textarea,select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem;color:var(--text);font-family:var(--font-mono);font-size:.85rem;outline:none;transition:border-color .15s;width:100%;}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+  input[readonly]{opacity:.55;}
+  .form-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);}
+
+  .section-title{font-family:var(--font-head);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.75rem;margin-top:1.25rem;display:flex;align-items:center;gap:.5rem;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* BAIXA */
+  .baixa-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+  .baixa-nome{font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:.25rem;}
+  .baixa-info{font-size:.78rem;color:var(--muted);margin-bottom:1rem;}
+  .baixa-row{display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;}
+  .progresso-bar{width:100%;height:6px;background:var(--bg);border-radius:999px;margin:.5rem 0;overflow:hidden;}
+  .progresso-fill{height:100%;background:var(--green);border-radius:999px;transition:width .4s;}
+
+  /* DETAIL */
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid rgba(42,42,58,.4);font-size:.85rem;}
+  .detail-row:last-child{border-bottom:none;}
+  .detail-key{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;}
+  .detail-val{font-weight:500;text-align:right;}
+
+  /* STATS */
+  .bar-chart{display:flex;flex-direction:column;gap:.5rem;}
+  .bar-row{display:flex;align-items:center;gap:.75rem;font-size:.78rem;}
+  .bar-label{width:180px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
+  .bar-track{flex:1;height:10px;background:var(--surface2);border-radius:999px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .5s;}
+  .bar-fill.green{background:var(--green);}
+  .bar-fill.red{background:var(--red);}
+  .bar-val{width:90px;text-align:right;flex-shrink:0;color:var(--text);}
+
+  /* LOADING */
+  .loading-overlay{position:fixed;inset:0;background:rgba(10,10,15,.85);z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .loading-overlay.show{opacity:1;pointer-events:all;}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-family:var(--font-head);color:var(--muted);font-size:.9rem;}
+
+  /* TOAST */
+  .toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;}
+  .toast{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.2rem;font-size:.83rem;display:flex;align-items:center;gap:.5rem;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .25s ease;max-width:360px;}
+  .toast.success{border-left:3px solid var(--green);}
+  .toast.error{border-left:3px solid var(--red);}
+  .toast.info{border-left:3px solid var(--accent);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  .empty{text-align:center;padding:4rem 2rem;color:var(--muted);}
+  .empty-icon{font-size:3rem;margin-bottom:1rem;}
+
+  #extrato-drop.drag{border-color:var(--accent);background:rgba(240,192,64,.04);}
+  .pix-badge{display:inline-block;padding:.15rem .45rem;border-radius:4px;font-size:.7rem;font-weight:700;background:rgba(77,159,255,.15);color:var(--blue);}
+  .match-score{font-size:.7rem;color:var(--muted);}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  @media(max-width:768px){main{padding:1rem;}.form-grid{grid-template-columns:1fr;}.cards-grid{grid-template-columns:1fr 1fr;}td,th{padding:.6rem .75rem;}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+  // Garante que o pdfjsLib esteja disponível globalmente
+  window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+</script>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <div class="setup-logo">⚡ RORAIMA</div>
+    <div class="setup-sub">Configure a conexão com o Google Sheets</div>
+
+    <div class="step">
+      <div class="step-num">Passo 1 — Apps Script</div>
+      <div class="step-text">Na planilha: <strong>Extensões → Apps Script</strong> → apague tudo → cole o código do arquivo <code>Codigo_Apps_Script.js</code> → salve (Ctrl+S).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Passo 2 — Implantar como Web App</div>
+      <div class="step-text">
+        <strong>Implantar → Nova implantação</strong><br>
+        Tipo: <code>App da Web</code> &nbsp;·&nbsp; Executar como: <code>Eu</code> &nbsp;·&nbsp; Acesso: <code>Qualquer pessoa</code><br>
+        → Implantar → Autorizar → copie a URL.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">Passo 3 — Cole a URL</div>
+      <div class="step-text">
+        Cole a URL abaixo e clique em Conectar.
+        <div class="url-input-wrap">
+          <input class="url-input" id="script-url" type="text" placeholder="https://script.google.com/macros/s/...">
+          <button class="btn" onclick="conectar()">Conectar</button>
+        </div>
+        <div id="url-hint" style="display:none;margin-top:.5rem;font-size:.75rem;color:var(--green)">
+          ✅ URL encontrada no navegador — clique em Conectar
+        </div>
+      </div>
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:1rem">URL salva no navegador — só configura uma vez.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+<header>
+  <div class="logo">⚡ RORAIMA <span>/ Empréstimos</span></div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">—</span>
+    </div>
+    <button class="btn secondary sm" onclick="recarregar()">↺ Atualizar</button>
+    <button class="btn secondary sm" onclick="resetConexao()">⚙ Reconectar</button>
+    <button class="btn sm" onclick="openModal()">+ Novo</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPanel('list')">📋 Contratos</div>
+  <div class="tab" onclick="showPanel('baixa')">💰 Dar Baixa</div>
+  <div class="tab" onclick="showPanel('extrato')">📄 Extrato PDF</div>
+  <div class="tab" onclick="showPanel('stats')">📊 Estatísticas</div>
+</div>
+
+<main>
+  <!-- LIST -->
+  <div id="list-panel">
+    <div class="cards-grid" id="summary-cards"></div>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="🔍  Buscar por nome, CPF, telefone..." id="searchInput" oninput="filterData()">
+      <select class="filter" id="statusFilter" onchange="filterData()">
+        <option value="">Todos os status</option>
+        <option value="ok">Pagos / OK</option>
+        <option value="atraso">Multa em Atraso</option>
+        <option value="naoemprestar">Não Emprestar</option>
+        <option value="parcial">Pagamento Parcial</option>
+      </select>
+      <select class="filter" id="empFilter" onchange="filterData()">
+        <option value="">Todos os valores</option>
+        <option value="500">R$ 500</option>
+        <option value="1000">R$ 1.000</option>
+        <option value="1500">R$ 1.500</option>
+      </select>
+      <span id="count-label" style="color:var(--muted);font-size:.8rem;white-space:nowrap"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('cliente')">Cliente</th>
+          <th onclick="sortBy('cpf')">CPF</th>
+          <th onclick="sortBy('telefone')">Telefone</th>
+          <th onclick="sortBy('dataInicial')">Início</th>
+          <th onclick="sortBy('dataFinal')">Vencimento</th>
+          <th onclick="sortBy('emprestimo')">Empréstimo</th>
+          <th onclick="sortBy('totalPagar')">Total</th>
+          <th onclick="sortBy('valorPago')">Pago</th>
+          <th>Diárias</th>
+          <th>Multas</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="pagination" id="pagination-bar"></div>
+    </div>
+  </div>
+
+  <!-- BAIXA -->
+  <div id="baixa-panel" style="display:none">
+    <div class="cards-grid" id="baixa-summary" style="margin-bottom:1.5rem"></div>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="🔍  Buscar cliente..." id="baixaSearch" oninput="filterBaixa()">
+      <select class="filter" id="baixaStatusFilter" onchange="filterBaixa()">
+        <option value="">Todos</option>
+        <option value="pendente">Com saldo pendente</option>
+        <option value="pago">Já quitados</option>
+      </select>
+      <span id="baixa-count" style="color:var(--muted);font-size:.8rem"></span>
+    </div>
+    <div id="baixa-list"></div>
+  </div>
+
+  <!-- EXTRATO PDF -->
+  <div id="extrato-panel" style="display:none">
+
+    <!-- DROP ZONE -->
+    <div id="extrato-drop" 
+      style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;margin-bottom:1.5rem;background:var(--surface2)">
+      <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
+      <div style="margin-bottom:1rem;color:var(--text)">
+        <strong>Importar Extrato PicPay (PDF)</strong>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" onchange="processarPDF(event)" 
+        style="display:block;margin:0 auto;background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--border);color:var(--text);cursor:pointer">
+      <button class="btn sm" onclick="console.log('Botão clicado'); var inp=document.getElementById('pdf-input'); if(inp.files.length) processarPDF({target:inp}); else alert('Por favor, selecione o arquivo PDF no botão acima antes de clicar aqui.')" style="margin-top:10px">Processar Arquivo Selecionado</button>
+      <div id="pdf-debug" style="margin-top:1rem;font-size:0.7rem;color:var(--muted);font-family:monospace;text-align:left;max-height:150px;overflow-y:auto;padding:10px;background:rgba(0,0,0,0.3);border:1px solid var(--border);display:none"></div>
+    </div>
+
+    <!-- RESUMO EXTRATO -->
+    <div class="cards-grid" id="extrato-cards" style="display:none;margin-bottom:1.5rem"></div>
+
+    <!-- RESULTADOS -->
+    <div id="extrato-resultados" style="display:none">
+
+      <!-- CONFIRMADOS -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+        <div class="section-title" style="margin:0;flex:1">✅ Encontrados — Baixa Automática</div>
+        <button class="btn green-btn sm" id="btn-confirmar-todos" onclick="confirmarTodos()">💰 Confirmar Todos</button>
+      </div>
+      <div class="table-wrap" style="margin-bottom:1.5rem">
+        <table>
+          <thead><tr>
+            <th>#</th>
+            <th>Horário Pix</th>
+            <th>Nome no Extrato</th>
+            <th>Cliente na Planilha</th>
+            <th>Valor</th>
+            <th>Diária Atual</th>
+            <th>Nova Diária</th>
+            <th>Baixa / Multa</th>
+          </tr></thead>
+          <tbody id="extrato-encontrados"></tbody>
+        </table>
+      </div>
+
+      <!-- NÃO ENCONTRADOS -->
+      <div class="section-title" style="margin-bottom:.75rem">⚠️ Não encontrados ou valor divergente</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th>
+            <th>Horário Pix</th>
+            <th>Nome no Extrato</th>
+            <th>Valor Recebido</th>
+            <th>Motivo</th>
+            <th>Ação Manual</th>
+          </tr></thead>
+          <tbody id="extrato-nao-encontrados"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STATS -->
+  <div id="stats-panel" style="display:none">
+    <div class="cards-grid" id="stats-cards" style="margin-bottom:2rem"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div class="table-wrap" style="padding:1.5rem">
+        <div class="section-title">Top Clientes</div>
+        <div class="bar-chart" id="top-clients-chart"></div>
+      </div>
+      <div class="table-wrap" style="padding:1.5rem">
+        <div class="section-title">Distribuição de Valores</div>
+        <div class="bar-chart" id="value-dist-chart"></div>
+      </div>
+    </div>
+    <div class="table-wrap" style="padding:1.5rem;margin-top:1.5rem">
+      <div class="section-title">Maior Débito Pendente</div>
+      <div class="bar-chart" id="debt-chart"></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- MODAL Editar/Criar -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Novo Contrato</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome do Cliente</label><input type="text" id="f-cliente" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF</label><input type="text" id="f-cpf" placeholder="00000000000"></div>
+        <div class="form-group"><label>Telefone</label><input type="text" id="f-telefone" placeholder="95999999999"></div>
+        <div class="form-group full"><label>Telefone / Referência</label><input type="text" id="f-tel-ref" placeholder="Nome e número"></div>
+        <div class="form-group"><label>Data Inicial</label><input type="date" id="f-data-ini"></div>
+        <div class="form-group"><label>Data Final</label><input type="date" id="f-data-fin"></div>
+        <div class="section-title full" style="margin:0">Valores</div>
+        <div class="form-group"><label>Empréstimo (R$)</label><input type="number" id="f-emprestimo" placeholder="0" oninput="calcAuto()"></div>
+        <div class="form-group"><label>Diária — auto</label><input type="number" id="f-diaria" readonly></div>
+        <div class="form-group"><label>Juros — auto</label><input type="number" id="f-juros" readonly></div>
+        <div class="form-group"><label>Total a Pagar — auto</label><input type="number" id="f-total" readonly></div>
+        <div class="form-group"><label>Valor Pago (R$)</label><input type="number" id="f-pago" placeholder="0"></div>
+        <div class="section-title full" style="margin:0">Multas</div>
+        <div class="form-group"><label>Multa R$20 (qtd)</label><input type="number" id="f-multa20" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Multa Dobra (qtd)</label><input type="number" id="f-multadobra" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Multas Extras (R$)</label><input type="number" id="f-multaextra" placeholder="0"></div>
+        <div class="form-group"><label>Diárias Pagas</label><input type="number" id="f-diarias" placeholder="0"></div>
+        <div class="form-group full"><label>Observação</label><input type="text" id="f-obs" placeholder="Anotações..."></div>
+        <div class="form-group"><label>Status do Cliente</label>
+          <select id="f-status">
+            <option value="">Normal</option>
+            <option value="multa em atraso">Multa em Atraso</option>
+            <option value="não emprestar">Não Emprestar</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Status Obs</label><input type="text" id="f-statusobs" placeholder="SUMIU, ENTREVISTA ONLINE..."></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn" id="save-btn" onclick="saveRecord()">💾 Salvar na Planilha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL Ver -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="view-title">Detalhes</div>
+      <button class="close-btn" onclick="closeViewModal()">✕</button>
+    </div>
+    <div class="modal-body" id="view-body"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Carregando...</div>
+</div>
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ===================== CONFIG =====================
+const STORAGE_URL_KEY = 'roraima_script_url_v2';
+let SCRIPT_URL = localStorage.getItem(STORAGE_URL_KEY) || '';
+
+window.onload = () => {
+  // Tenta qualquer chave conhecida
+  const chaves = ['roraima_script_url_v2', 'roraima_script_url', 'roraima_url'];
+  for (const chave of chaves) {
+    const salvo = localStorage.getItem(chave);
+    if (salvo && salvo.startsWith('https://script.google.com')) {
+      SCRIPT_URL = salvo;
+      localStorage.setItem(STORAGE_URL_KEY, SCRIPT_URL);
+      break;
+    }
+  }
+  const inp = document.getElementById('script-url');
+  if (inp && SCRIPT_URL) {
+    inp.value = SCRIPT_URL;
+    const hint = document.getElementById('url-hint');
+    if (hint) hint.style.display = 'block';
+  }
+
+  if (SCRIPT_URL) {
+    showApp();
+    recarregar();
+  }
+};
+
+function conectar() {
+  const url = (document.getElementById('script-url').value || '').trim();
+  if (!url.startsWith('https://script.google.com')) {
+    alert('URL inválida. Cole a URL completa do Apps Script.');
+    return;
+  }
+  SCRIPT_URL = url;
+  localStorage.setItem(STORAGE_URL_KEY, url);
+  showApp();
+  recarregar();
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+function resetConexao() {
+  ['roraima_script_url_v2','roraima_script_url','roraima_url'].forEach(k => localStorage.removeItem(k));
+  SCRIPT_URL = '';
+  location.reload();
+}
+
+// ===================== JSONP =====================
+let _cbCount = 0;
+function jsonp(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = '__rr_cb_' + (++_cbCount);
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      reject(new Error('Timeout — verifique a URL e as permissões do Web App'));
+    }, 15000);
+
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.getElementById('_jsonp_script_' + cbName)?.remove();
+      resolve(data);
+    };
+
+    const _p = {...params, callback: cbName};
+    const qs = Object.keys(_p).map(k => k === "record" ? "record=" + _p[k] : k + "=" + encodeURIComponent(_p[k])).join("&");
+    const script = document.createElement('script');
+    script.id = '_jsonp_script_' + cbName;
+    script.src = SCRIPT_URL + '?' + qs;
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      reject(new Error('Erro de rede ou URL inválida'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// ===================== DATA =====================
+let allData = [];
+let filtered = [];
+let sortCol = 'dataInicial', sortDir = -1;
+let currentPage = 1;
+const PAGE_SIZE = 25;
+let editRow = null;
+
+function setSyncStatus(state, label) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  document.getElementById('sync-label').textContent = label;
+}
+
+async function recarregar() {
+  showLoading('Buscando dados da planilha...');
+  setSyncStatus('loading', 'Sincronizando...');
+  try {
+    const res = await jsonp({ action: 'read' });
+    if (!res.ok) throw new Error(res.error);
+    allData = res.data.map(normalizeRecord);
+    setSyncStatus('ok', 'Sincronizado • ' + new Date().toLocaleTimeString('pt-BR'));
+    renderCards(); filterData(); filterBaixa();
+    if (document.getElementById('stats-panel').style.display !== 'none') renderStats();
+    toast('Dados atualizados ✓', 'success');
+  } catch (err) {
+    setSyncStatus('error', 'Erro de conexão');
+    toast('Erro: ' + err.message, 'error');
+  } finally { hideLoading(); }
+}
+
+function normalizeRecord(r) {
+  return {
+    _row: r._row,
+    cliente: (r.cliente||'').toString().toUpperCase(),
+    cpf: (r.cpf||'').toString(),
+    telefone: (r.telefone||'').toString(),
+    telRef: (r.telRef||'').toString(),
+    dataInicial: r.dataInicial,
+    dataFinal: r.dataFinal,
+    emprestimo: parseFloat(r.emprestimo)||0,
+    diaria: parseFloat(r.diaria)||0,
+    juros: parseFloat(r.juros)||0,
+    totalPagar: parseFloat(r.totalPagar)||0,
+    valorPago: parseFloat(r.valorPago)||0,
+    multa20: parseFloat(r.multa20)||0,
+    multadobra: parseFloat(r.multadobra)||0,
+    multaExtra: parseFloat(r.multaExtra)||0,
+    diarias: parseFloat(r.diarias)||0,
+    obs: (r.obs||'').toString(),
+    statusCliente: (r.statusCliente||'').toString(),
+    statusObs: (r.statusObs||'').toString(),
+    dataAtual: r.dataAtual||''
+  };
+}
+
+async function apiCall(params) {
+  return await jsonp(params);
+}
+
+// ===================== FORMAT =====================
+function fmt(v) {
+  const n = parseFloat(v);
+  if (isNaN(n) || v===''||v===null||v===undefined) return '—';
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtDate(val) {
+  if (!val) return '—';
+  if (typeof val === 'number') { const d = new Date(Math.round((val-25569)*86400*1000)); return d.toLocaleDateString('pt-BR'); }
+  try { const d = new Date(val); if (!isNaN(d)) return d.toLocaleDateString('pt-BR'); } catch(e){}
+  return val;
+}
+function dateToInput(val) {
+  if (!val) return '';
+  if (typeof val === 'number') { const d = new Date(Math.round((val-25569)*86400*1000)); return d.toISOString().split('T')[0]; }
+  try { const d = new Date(val); if (!isNaN(d)) return d.toISOString().split('T')[0]; } catch(e){}
+  return '';
+}
+function inputToSerial(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  return Math.floor(d.getTime()/86400000)+25569;
+}
+
+// ===================== CARDS =====================
+function renderCards() {
+  const totalEmp = allData.reduce((s,r)=>s+r.emprestimo,0);
+  const totalPago = allData.reduce((s,r)=>s+r.valorPago,0);
+  const bloq = allData.filter(r=>r.statusCliente.toLowerCase().includes('não emprestar')).length;
+  const atr = allData.filter(r=>r.statusCliente.toLowerCase().includes('multa em atraso')).length;
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="card"><div class="card-label">Total Contratos</div><div class="card-value">${allData.length}</div></div>
+    <div class="card blue"><div class="card-label">Total Emprestado</div><div class="card-value">${fmt(totalEmp)}</div></div>
+    <div class="card green"><div class="card-label">Total Recebido</div><div class="card-value">${fmt(totalPago)}</div><div class="card-sub">${totalEmp?((totalPago/totalEmp)*100).toFixed(1):0}%</div></div>
+    <div class="card red"><div class="card-label">Não Emprestar</div><div class="card-value">${bloq}</div></div>
+    <div class="card orange"><div class="card-label">Multa em Atraso</div><div class="card-value">${atr}</div></div>
+  `;
+}
+
+// ===================== TABLE =====================
+function getStatus(r) {
+  const sc = r.statusCliente.toLowerCase();
+  if (sc.includes('não emprestar')) return {label:'Não Emprestar',cls:'badge-danger'};
+  if (sc.includes('multa em atraso')) return {label:'Multa em Atraso',cls:'badge-warn'};
+  if (r.valorPago>=r.totalPagar&&r.totalPagar>0) return {label:'Pago',cls:'badge-ok'};
+  if (r.valorPago>0) return {label:'Parcial',cls:'badge-info'};
+  return {label:'Ativo',cls:'badge-grey'};
+}
+
+function filterData() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  const emp = document.getElementById('empFilter').value;
+  filtered = allData.filter(r => {
+    const mq = !q||r.cliente.toLowerCase().includes(q)||r.cpf.includes(q)||r.telefone.includes(q);
+    let ms = true;
+    if (st==='ok') ms=!r.statusCliente;
+    else if (st==='atraso') ms=r.statusCliente.toLowerCase().includes('multa em atraso');
+    else if (st==='naoemprestar') ms=r.statusCliente.toLowerCase().includes('não emprestar');
+    else if (st==='parcial') ms=r.valorPago>0&&r.valorPago<r.totalPagar;
+    const me = !emp||r.emprestimo==emp;
+    return mq&&ms&&me;
+  });
+  filtered.sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+  currentPage=1;
+  document.getElementById('count-label').textContent=`${filtered.length} contratos`;
+  renderTable();
+}
+function sortBy(col){sortCol===col?sortDir*=-1:(sortCol=col,sortDir=1);filterData();}
+
+function renderTable() {
+  const page = filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  const tbody = document.getElementById('table-body');
+  if (!page.length){tbody.innerHTML=`<tr><td colspan="12"><div class="empty"><div class="empty-icon">🔍</div>Nenhum contrato</div></td></tr>`;renderPagination();return;}
+  tbody.innerHTML = page.map(r=>{
+    const st=getStatus(r);
+    const multas=r.multa20*20+r.multadobra*68;
+    const saldo=r.valorPago-r.totalPagar;
+    return `<tr>
+      <td><div class="nome-cell" title="${r.cliente}">${r.cliente}</div></td>
+      <td class="cpf-cell">${r.cpf}</td>
+      <td class="cpf-cell">${r.telefone}</td>
+      <td class="cpf-cell">${fmtDate(r.dataInicial)}</td>
+      <td class="cpf-cell">${fmtDate(r.dataFinal)}</td>
+      <td class="money neu">${fmt(r.emprestimo)}</td>
+      <td class="money neu">${fmt(r.totalPagar)}</td>
+      <td class="money ${saldo>=0?'pos':'neg'}">${fmt(r.valorPago)}</td>
+      <td class="cpf-cell">${r.diarias||'—'}</td>
+      <td class="money ${multas>0?'neg':''}">${multas>0?fmt(multas):'—'}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="viewRecord(${r._row})">👁</button>
+        <button class="icon-btn" onclick="editRecord(${r._row})">✏️</button>
+        <button class="icon-btn red" onclick="deleteRecord(${r._row})">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  renderPagination();
+}
+
+function renderPagination(){
+  const pages=Math.ceil(filtered.length/PAGE_SIZE);
+  const bar=document.getElementById('pagination-bar');
+  if(pages<=1){bar.innerHTML=`<span>${filtered.length} registros</span><div></div>`;return;}
+  let btns='';for(let i=1;i<=pages;i++)btns+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  bar.innerHTML=`<span>${filtered.length} registros • Página ${currentPage}/${pages}</span><div class="page-btns">${btns}</div>`;
+}
+function goPage(p){currentPage=p;renderTable();}
+
+// ===================== BAIXA =====================
+function filterBaixa(){
+  const q=(document.getElementById('baixaSearch')?.value||'').toLowerCase();
+  const st=document.getElementById('baixaStatusFilter')?.value||'';
+  const list=allData.filter(r=>{
+    const mq=!q||r.cliente.toLowerCase().includes(q)||r.cpf.includes(q);
+    let ms=true;
+    if(st==='pendente') ms=r.diarias<20;
+    else if(st==='pago') ms=r.diarias>=20;
+    return mq&&ms;
+  }).sort((a,b)=>a.diarias-b.diarias); // quem tem menos parcelas pagas aparece primeiro
+
+  const totalDiarias=allData.reduce((s,r)=>s+(r.diarias||0),0);
+  const emAberto=allData.filter(r=>r.diarias<20).length;
+  const quitados=allData.filter(r=>r.diarias>=20).length;
+
+  document.getElementById('baixa-summary').innerHTML=`
+    <div class="card blue"><div class="card-label">Total de Contratos</div><div class="card-value">${allData.length}</div></div>
+    <div class="card orange"><div class="card-label">Em Aberto</div><div class="card-value">${emAberto}</div><div class="card-sub">parcelas pendentes</div></div>
+    <div class="card green"><div class="card-label">Concluídos</div><div class="card-value">${quitados}</div><div class="card-sub">20 diárias pagas</div></div>
+  `;
+  document.getElementById('baixa-count').textContent=`${list.length} contratos`;
+
+  const el=document.getElementById('baixa-list');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>Nenhum encontrado</div>`;return;}
+
+  el.innerHTML=list.map(r=>{
+    const parcAtual = parseInt(r.diarias)||0;
+    const proxParc  = Math.min(parcAtual+1, 20);
+    const perc      = (parcAtual/20)*100;
+    const concluido = parcAtual>=20;
+    const st        = getStatus(r);
+
+    // sem botões de parcela — contador simples
+
+    return `<div class="baixa-card" id="bc-${r._row}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.25rem">
+        <div class="baixa-nome">${r.cliente}</div>
+        <span class="badge ${st.cls}">${st.label}</span>
+      </div>
+      <div class="baixa-info">
+        CPF: ${r.cpf} &nbsp;·&nbsp; Tel: ${r.telefone} &nbsp;·&nbsp;
+        Empréstimo: ${fmt(r.emprestimo)} &nbsp;·&nbsp; Diária: ${fmt(r.diaria)}
+      </div>
+
+      <!-- PROGRESSO -->
+      <div style="margin-bottom:.75rem">
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:.4rem">
+          <span>Diárias pagas: <strong style="color:${concluido?'var(--green)':'var(--accent)'}">${parcAtual}/20 ${concluido?'✅ Concluído':''}</strong></span>
+          ${!concluido?`<span>Próxima: <strong style="color:var(--text)">Diária ${proxParc}</strong></span>`:''}
+        </div>
+        <div class="progresso-bar"><div class="progresso-fill" style="width:${perc.toFixed(0)}%"></div></div>
+      </div>
+
+      <!-- CONTADORES -->
+      <div class="baixa-row">
+
+        <div class="form-group" style="flex:1;min-width:130px">
+          <label>📅 Diária (col O)</label>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <button class="cnt-btn" onclick="ajustarCnt('bdi-${r._row}',-1,0,20)">−</button>
+            <input type="number" id="bdi-${r._row}" value="${parcAtual}" min="0" max="20" style="text-align:center;width:60px">
+            <button class="cnt-btn" onclick="ajustarCnt('bdi-${r._row}',1,0,20)">+</button>
+          </div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">máx 20 diárias</div>
+        </div>
+
+        <div class="form-group" style="flex:1;min-width:130px">
+          <label>🕕 Multa R$20 — col L (18h–00h)</label>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <button class="cnt-btn" onclick="ajustarCnt('bm20-${r._row}',-1,0)">−</button>
+            <input type="number" id="bm20-${r._row}" value="${r.multa20||0}" min="0" style="text-align:center;width:60px">
+            <button class="cnt-btn" onclick="ajustarCnt('bm20-${r._row}',1,0)">+</button>
+          </div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">qtd na planilha</div>
+        </div>
+
+        <div class="form-group" style="flex:1;min-width:130px">
+          <label>🕛 Multa Dobra — col M (após 00h)</label>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <button class="cnt-btn" onclick="ajustarCnt('bmdb-${r._row}',-1,0)">−</button>
+            <input type="number" id="bmdb-${r._row}" value="${r.multadobra||0}" min="0" style="text-align:center;width:60px">
+            <button class="cnt-btn" onclick="ajustarCnt('bmdb-${r._row}',1,0)">+</button>
+          </div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">qtd na planilha</div>
+        </div>
+
+        <div class="form-group" style="flex:1;min-width:130px">
+          <label>Status do Cliente</label>
+          <select id="bst-${r._row}">
+            <option value="" ${!r.statusCliente?'selected':''}>Normal</option>
+            <option value="multa em atraso" ${r.statusCliente==='multa em atraso'?'selected':''}>Multa em Atraso</option>
+            <option value="não emprestar" ${r.statusCliente==='não emprestar'?'selected':''}>Não Emprestar</option>
+          </select>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end">
+          <label style="visibility:hidden">.</label>
+          <button class="btn green-btn" onclick="darBaixa(${r._row})">💰 Dar Baixa</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// selecionarParcela removido — usando contador simples
+
+function ajustarCnt(id, delta, min=0, max=9999) {
+  const el=document.getElementById(id);
+  const v=Math.min(max, Math.max(min, (parseInt(el.value)||0)+delta));
+  el.value=v;
+}
+
+async function darBaixa(row) {
+  const r = allData.find(x=>x._row===row);
+  if (!r) return;
+
+  const novaDiaria = parseInt(document.getElementById(`bdi-${row}`)?.value ?? r.diarias) || 0;
+
+  const m20    = parseInt(document.getElementById(`bm20-${row}`).value)||0;
+  const mdb    = parseInt(document.getElementById(`bmdb-${row}`).value)||0;
+  const st     = document.getElementById(`bst-${row}`).value;
+
+  if (novaDiaria===(parseInt(r.diarias)||0) && m20===(parseInt(r.multa20)||0) && mdb===(parseInt(r.multadobra)||0) && st===r.statusCliente){
+    toast('Nenhuma alteração detectada','info'); return;
+  }
+
+  // Salva apenas contadores — col O=diárias, col L=multa20, col M=multadobra
+  const updated = {
+    ...r,
+    diarias:    novaDiaria,   // col O: número da diária (1–20)
+    multa20:    m20,          // col L: qtd multas R$20 (18h–00h)
+    multadobra: mdb,          // col M: qtd multas dobra (após 00h)
+    statusCliente: st
+  };
+
+  showLoading('Salvando na planilha...');
+  try {
+    const res = await apiCall({ action:'update', record: encodeURIComponent(JSON.stringify(updated)) });
+    if (!res.ok) throw new Error(res.error);
+    const idx = allData.findIndex(x=>x._row===row);
+    allData[idx] = normalizeRecord(updated);
+    toast(`✓ ${r.cliente} — Diária ${novaDiaria}/20 | Multa R$20: ${m20} | Dobra: ${mdb}`,'success');
+    filterBaixa(); renderCards(); filterData();
+    setSyncStatus('ok','Salvo • '+new Date().toLocaleTimeString('pt-BR'));
+  } catch(err) {
+    toast('Erro: '+err.message,'error');
+    setSyncStatus('error','Erro ao salvar');
+  } finally { hideLoading(); }
+}
+
+// ===================== MODAL =====================
+function openModal(row=null) {
+  editRow=row;
+  document.getElementById('modal-title').textContent=row===null?'Novo Contrato':'Editar Contrato';
+  const r=row!==null?allData.find(x=>x._row===row):null;
+  document.getElementById('f-cliente').value=r?.cliente||'';
+  document.getElementById('f-cpf').value=r?.cpf||'';
+  document.getElementById('f-telefone').value=r?.telefone||'';
+  document.getElementById('f-tel-ref').value=r?.telRef||'';
+  document.getElementById('f-data-ini').value=r?dateToInput(r.dataInicial):'';
+  document.getElementById('f-data-fin').value=r?dateToInput(r.dataFinal):'';
+  document.getElementById('f-emprestimo').value=r?.emprestimo||'';
+  document.getElementById('f-diaria').value=r?.diaria||'';
+  document.getElementById('f-juros').value=r?.juros||'';
+  document.getElementById('f-total').value=r?.totalPagar||'';
+  document.getElementById('f-pago').value=r?.valorPago||'';
+  document.getElementById('f-multa20').value=r?.multa20||'';
+  document.getElementById('f-multadobra').value=r?.multadobra||'';
+  document.getElementById('f-multaextra').value=r?.multaExtra||'';
+  document.getElementById('f-diarias').value=r?.diarias||'';
+  document.getElementById('f-obs').value=r?.obs||'';
+  document.getElementById('f-status').value=r?.statusCliente||'';
+  document.getElementById('f-statusobs').value=r?.statusObs||'';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+function calcAuto(){
+  const emp=parseFloat(document.getElementById('f-emprestimo').value)||0;
+  document.getElementById('f-diaria').value=+(emp*.068).toFixed(2);
+  document.getElementById('f-juros').value=+(emp*.36).toFixed(2);
+  document.getElementById('f-total').value=+(emp+emp*.36).toFixed(2);
+}
+
+async function saveRecord() {
+  const btn=document.getElementById('save-btn');btn.disabled=true;
+  const record={
+    _row:editRow,
+    cliente:document.getElementById('f-cliente').value.trim().toUpperCase(),
+    cpf:document.getElementById('f-cpf').value.trim(),
+    telefone:document.getElementById('f-telefone').value.trim(),
+    telRef:document.getElementById('f-tel-ref').value.trim(),
+    dataInicial:inputToSerial(document.getElementById('f-data-ini').value),
+    dataFinal:inputToSerial(document.getElementById('f-data-fin').value),
+    emprestimo:parseFloat(document.getElementById('f-emprestimo').value)||0,
+    diaria:parseFloat(document.getElementById('f-diaria').value)||0,
+    juros:parseFloat(document.getElementById('f-juros').value)||0,
+    totalPagar:parseFloat(document.getElementById('f-total').value)||0,
+    valorPago:parseFloat(document.getElementById('f-pago').value)||0,
+    multa20:parseFloat(document.getElementById('f-multa20').value)||0,
+    multadobra:parseFloat(document.getElementById('f-multadobra').value)||0,
+    multaExtra:parseFloat(document.getElementById('f-multaextra').value)||0,
+    diarias:parseFloat(document.getElementById('f-diarias').value)||0,
+    obs:document.getElementById('f-obs').value.trim(),
+    statusCliente:document.getElementById('f-status').value,
+    statusObs:document.getElementById('f-statusobs').value.trim(),
+    dataAtual:''
+  };
+  if(!record.cliente){toast('Nome obrigatório','error');btn.disabled=false;return;}
+  showLoading('Salvando na planilha...');
+  try {
+    const action=editRow===null?'create':'update';
+    const res=await apiCall({action, record:encodeURIComponent(JSON.stringify(record))});
+    if(!res.ok) throw new Error(res.error);
+    if(action==='create') record._row=res._row;
+    if(editRow===null) allData.push(normalizeRecord(record));
+    else { const idx=allData.findIndex(x=>x._row===editRow); allData[idx]=normalizeRecord(record); }
+    toast(action==='create'?'Contrato criado ✓':'Contrato atualizado ✓','success');
+    closeModal(); renderCards(); filterData(); filterBaixa();
+    setSyncStatus('ok','Salvo • '+new Date().toLocaleTimeString('pt-BR'));
+  } catch(err){toast('Erro: '+err.message,'error');setSyncStatus('error','Erro ao salvar');}
+  finally{hideLoading();btn.disabled=false;}
+}
+
+function editRecord(row){openModal(row);}
+
+async function deleteRecord(row){
+  const r=allData.find(x=>x._row===row);
+  if(!confirm(`Excluir contrato de ${r?.cliente}?`)) return;
+  showLoading('Excluindo...');
+  try {
+    const res=await apiCall({action:'delete', _row:row});
+    if(!res.ok) throw new Error(res.error);
+    allData=allData.filter(x=>x._row!==row);
+    toast('Excluído ✓','info');
+    renderCards();filterData();filterBaixa();
+    setTimeout(recarregar,800);
+  } catch(err){toast('Erro: '+err.message,'error');}
+  finally{hideLoading();}
+}
+
+function viewRecord(row){
+  const r=allData.find(x=>x._row===row);
+  const st=getStatus(r);
+  const multas=r.multa20*20+r.multadobra*68;
+  const saldo=r.valorPago-r.totalPagar;
+  document.getElementById('view-title').textContent=r.cliente;
+  document.getElementById('view-body').innerHTML=`
+    <div class="detail-row"><div class="detail-key">CPF</div><div class="detail-val">${r.cpf}</div></div>
+    <div class="detail-row"><div class="detail-key">Telefone</div><div class="detail-val">${r.telefone}</div></div>
+    <div class="detail-row"><div class="detail-key">Tel. Referência</div><div class="detail-val">${r.telRef||'—'}</div></div>
+    <div class="detail-row"><div class="detail-key">Data Inicial</div><div class="detail-val">${fmtDate(r.dataInicial)}</div></div>
+    <div class="detail-row"><div class="detail-key">Data Final</div><div class="detail-val">${fmtDate(r.dataFinal)}</div></div>
+    <div class="detail-row"><div class="detail-key">Empréstimo</div><div class="detail-val money neu">${fmt(r.emprestimo)}</div></div>
+    <div class="detail-row"><div class="detail-key">Total a Pagar</div><div class="detail-val money neu">${fmt(r.totalPagar)}</div></div>
+    <div class="detail-row"><div class="detail-key">Valor Pago</div><div class="detail-val money ${saldo>=0?'pos':'neg'}">${fmt(r.valorPago)}</div></div>
+    <div class="detail-row"><div class="detail-key">Saldo</div><div class="detail-val money ${saldo>=0?'pos':'neg'}">${fmt(saldo)}</div></div>
+    <div class="detail-row"><div class="detail-key">Multas</div><div class="detail-val money ${multas>0?'neg':''}">${multas>0?fmt(multas):'—'}</div></div>
+    <div class="detail-row"><div class="detail-key">Status</div><div class="detail-val"><span class="badge ${st.cls}">${st.label}</span></div></div>
+    ${r.obs?`<div class="detail-row"><div class="detail-key">Obs</div><div class="detail-val">${r.obs}</div></div>`:''}
+    <div class="form-footer" style="border:none;padding-top:.75rem">
+      <button class="btn secondary" onclick="closeViewModal()">Fechar</button>
+      <button class="btn" onclick="closeViewModal();editRecord(${r._row})">✏️ Editar</button>
+    </div>
+  `;
+  document.getElementById('view-modal').classList.add('open');
+}
+function closeViewModal(){document.getElementById('view-modal').classList.remove('open');}
+
+// ===================== TABS =====================
+function showPanel(p){
+  ['list','baixa','extrato','stats'].forEach(id=>document.getElementById(id+'-panel').style.display='none');
+  document.getElementById(p+'-panel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['list','baixa','extrato','stats'][i]===p));
+  if(p==='stats') renderStats();
+  if(p==='baixa') filterBaixa();
+}
+
+// ===================== STATS =====================
+function renderStats(){
+  const te=allData.reduce((s,r)=>s+r.emprestimo,0);
+  const tp=allData.reduce((s,r)=>s+r.valorPago,0);
+  const tm=allData.reduce((s,r)=>s+r.multa20*20+r.multadobra*68,0);
+  const u=new Set(allData.map(r=>r.cpf)).size;
+  document.getElementById('stats-cards').innerHTML=`
+    <div class="card"><div class="card-label">Clientes Únicos</div><div class="card-value">${u}</div></div>
+    <div class="card blue"><div class="card-label">Total Emprestado</div><div class="card-value">${fmt(te)}</div></div>
+    <div class="card green"><div class="card-label">Total Recebido</div><div class="card-value">${fmt(tp)}</div></div>
+    <div class="card orange"><div class="card-label">Total Multas</div><div class="card-value">${fmt(tm)}</div></div>
+    <div class="card red"><div class="card-label">A Receber</div><div class="card-value">${fmt(te-tp)}</div></div>
+  `;
+  const cc={};allData.forEach(r=>{cc[r.cliente]=(cc[r.cliente]||0)+1;});
+  const tc=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const mx=tc[0]?.[1]||1;
+  document.getElementById('top-clients-chart').innerHTML=tc.map(([n,c])=>
+    `<div class="bar-row"><div class="bar-label">${n.split(' ').slice(0,2).join(' ')}</div><div class="bar-track"><div class="bar-fill" style="width:${(c/mx*100).toFixed(0)}%"></div></div><div class="bar-val">${c} contratos</div></div>`
+  ).join('');
+  const dist={'R$ 500':0,'R$ 1.000':0,'R$ 1.500':0,'Outros':0};
+  allData.forEach(r=>{if(r.emprestimo===500)dist['R$ 500']++;else if(r.emprestimo===1000)dist['R$ 1.000']++;else if(r.emprestimo===1500)dist['R$ 1.500']++;else dist['Outros']++;});
+  const md=Math.max(...Object.values(dist));
+  document.getElementById('value-dist-chart').innerHTML=Object.entries(dist).map(([k,v])=>
+    `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill green" style="width:${(v/md*100).toFixed(0)}%"></div></div><div class="bar-val">${v} contratos</div></div>`
+  ).join('');
+  const db={};allData.forEach(r=>{const d=r.totalPagar-r.valorPago;if(d>0)db[r.cliente]=(db[r.cliente]||0)+d;});
+  const td=Object.entries(db).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const mxd=td[0]?.[1]||1;
+  document.getElementById('debt-chart').innerHTML=td.map(([n,d])=>
+    `<div class="bar-row"><div class="bar-label">${n.split(' ').slice(0,3).join(' ')}</div><div class="bar-track"><div class="bar-fill red" style="width:${(d/mxd*100).toFixed(0)}%"></div></div><div class="bar-val">${fmt(d)}</div></div>`
+  ).join('');
+}
+
+// ===================== LOADING / TOAST =====================
+function showLoading(txt='Carregando...'){document.getElementById('loading-text').textContent=txt;document.getElementById('loading').classList.add('show');}
+function hideLoading(){document.getElementById('loading').classList.remove('show');}
+function toast(msg,type='info'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`${type==='success'?'✅':type==='error'?'❌':'ℹ️'} ${msg}`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+</script>
+</body>
+</html>
+<script>
+// ===================== EXTRATO PDF =====================
+var pixEncontrados = [];
+var pixPendentes   = [];
+
+(function() {
+  var dz = document.getElementById('extrato-drop');
+  if (!dz) return;
+  dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
+  dz.addEventListener('drop', function(e){
+    e.preventDefault(); dz.classList.remove('drag');
+    var file = e.dataTransfer.files[0];
+    if (file) processarPDF({target:{files:[file]}});
+  });
+})();
+
+function pdfLog(msg) {
+  var el = document.getElementById('pdf-debug');
+  if (el) {
+    el.style.display = 'block';
+    el.innerHTML += '> ' + msg + '<br>';
+  }
+  console.log(msg);
+}
+
+function processarPDF(event) {
+  console.log('Iniciando processamento...');
+  var file = event.target.files[0];
+  if (!file) {
+    alert('Nenhum arquivo detectado no input.');
+    return;
+  }
+  
+  var debugEl = document.getElementById('pdf-debug');
+  if (debugEl) debugEl.innerHTML = '';
+  pdfLog('Arquivo selecionado: ' + file.name);
+  
+  showLoading('Lendo PDF...');
+  
+  // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+  event.target.value = '';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    pdfLog('Leitura do arquivo concluída.');
+    var arrayBuffer = e.target.result;
+
+    // Configura worker do PDF.js
+    if (typeof pdfjsLib === 'undefined' || !pdfjsLib.getDocument) {
+      // Tenta recuperar se estiver em outro namespace
+      window.pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+      if (!window.pdfjsLib || !window.pdfjsLib.getDocument) {
+        hideLoading();
+        alert('ERRO CRÍTICO: A biblioteca de PDF não foi carregada pelo navegador. Verifique sua internet ou tente outro navegador.');
+        return;
+      }
+    }
+    
+    // Tenta configurar o worker, mas não trava se falhar
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    } catch(e) { console.warn('Worker falhou, tentando modo compatibilidade'); }
+
+    var loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    loadingTask.promise.then(function(pdf) {
+      pdfLog('PDF carregado. Total de páginas: ' + pdf.numPages);
+      var totalPages = pdf.numPages;
+      var promises = [];
+      
+      for (var p = 1; p <= totalPages; p++) {
+        promises.push(pdf.getPage(p).then(function(page) {
+          return page.getTextContent().then(function(textContent) {
+            // Extração linear simples para evitar erros de ordenação
+            return textContent.items.map(function(item) { return item.str; }).join(' ');
+          });
+        }));
+      }
+
+      Promise.all(promises).then(function(paginas) {
+        pdfLog('Todas as páginas processadas.');
+        var textoCompleto = paginas.join('\n');
+        hideLoading();
+        var transacoes = extrairTransacoes(textoCompleto);
+        pdfLog('Transações encontradas: ' + transacoes.length);
+        if (transacoes.length === 0) {
+          toast('Nenhuma transação encontrada no PDF', 'error');
+        } else {
+          cruzarComClientes(transacoes);
+        }
+      }).catch(function(err) {
+        hideLoading();
+        toast('Erro ao processar páginas: ' + err.message, 'error');
+      });
+    }).catch(function(err) {
+      hideLoading();
+      toast('Erro ao carregar PDF: ' + err.message, 'error');
+    });
+  };
+  reader.onerror = function(err){ 
+    console.error('Erro no FileReader:', err);
+    hideLoading(); 
+    toast('Falha ao ler arquivo do disco', 'error'); 
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function extrairTransacoes(text) {
+  var transacoes = [];
+  var seq = 0;
+  
+  // Limpeza agressiva do texto para facilitar o Regex
+  var cleanText = text.replace(/\s+/g, ' ');
+  pdfLog('Texto extraído (resumo): ' + cleanText.substring(0, 100) + '...');
+
+  // Regex para capturar: DATA + "Pix recebido" + NOME + "Entrada" + VALOR
+  // Exemplo: 17/05/2026 Pix recebido HILTARDS AMARAL DOS SANTOS JUSTINO Entrada R$ 54,00
+  var masterRgx = /(\d{2}\/\d{2}\/\d{4})\s+Pix\s+recebido\s+(.*?)\s+Entrada\s+R\$\s*([\d.]+,\d{2})/gi;
+  
+  var match;
+  while ((match = masterRgx.exec(cleanText)) !== null) {
+    seq++;
+    var data = match[1];
+    var nome = match[2].trim();
+    var valorStr = match[3].replace(/\./g, '').replace(',', '.');
+    
+    transacoes.push({
+      seq: seq,
+      data: data,
+      hora: '',
+      nome: nome,
+      valor: parseFloat(valorStr)
+    });
+    pdfLog('Encontrado: ' + nome + ' - R$ ' + valorStr);
+  }
+  
+  return transacoes;
+}
+
+function normalizeNome(s) {
+  return s.toUpperCase()
+    .replace(/[ÀÁÂÃÄ]/g,'A').replace(/[ÈÉÊË]/g,'E')
+    .replace(/[ÌÍÎÏ]/g,'I').replace(/[ÒÓÔÕÖ]/g,'O')
+    .replace(/[ÙÚÛÜ]/g,'U').replace(/[Ç]/g,'C')
+    .replace(/[^A-Z ]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function similaridade(a, b) {
+  a = normalizeNome(a);
+  b = normalizeNome(b);
+  if (a === b) return 1;
+  var wa = a.split(' ').filter(function(x){ return x.length > 2; });
+  var wb = b.split(' ').filter(function(x){ return x.length > 2; });
+  if (!wa.length || !wb.length) return 0;
+  var matches = 0;
+  wa.forEach(function(w){
+    if (wb.some(function(x){ return x.indexOf(w) >= 0 || w.indexOf(x) >= 0; })) matches++;
+  });
+  return matches / Math.max(wa.length, wb.length);
+}
+
+function dataBRtoSerial(dataBR) {
+  var partes = dataBR.split('/');
+  var d = partes[0], m = partes[1], a = partes[2];
+  var dt = new Date(a + '-' + m + '-' + d + 'T00:00:00Z');
+  return Math.floor(dt.getTime() / 86400000) + 25569;
+}
+
+function contratoAtivo(r, serialDia) {
+  var ini = typeof r.dataInicial === 'number' ? r.dataInicial : parseFloat(r.dataInicial) || 0;
+  var fin = typeof r.dataFinal   === 'number' ? r.dataFinal   : parseFloat(r.dataFinal)   || 0;
+  if (!ini || !fin) return false;
+  return serialDia >= ini && serialDia <= fin;
+}
+
+function cruzarComClientes(transacoes) {
+  pixEncontrados = [];
+  pixPendentes   = [];
+
+  transacoes.forEach(function(tx) {
+    var serialDia = dataBRtoSerial(tx.data);
+    var ativos = allData.filter(function(r){ return contratoAtivo(r, serialDia); });
+
+    var melhorCliente = null;
+    var melhorScore   = 0;
+
+    ativos.forEach(function(r) {
+      var score = similaridade(tx.nome, r.cliente);
+      if (score > melhorScore) { melhorScore = score; melhorCliente = r; }
+    });
+
+    var LIMIAR = 0.35; // Mais tolerante para nomes abreviados
+
+    if (melhorCliente && melhorScore >= LIMIAR) {
+      var diaria   = melhorCliente.diaria || 0;
+      // Aceita variações de valor (normal, multa, dobra)
+      var valorOk  = (diaria > 0 && Math.abs(tx.valor - diaria) <= 5) || 
+                     (tx.valor === 54) || (tx.valor === 68) || (tx.valor === 34);
+      var autoConf = melhorScore >= 0.85;
+
+      if (valorOk) {
+        pixEncontrados.push({
+          seq: tx.seq, data: tx.data, hora: tx.hora, nome: tx.nome, valor: tx.valor,
+          cliente: melhorCliente, score: melhorScore,
+          autoConfirmado: autoConf,
+          novaDiaria: Math.min(20, (parseInt(melhorCliente.diarias) || 0) + 1),
+          salvo: false, multa20: 0, multadobra: 0
+        });
+      } else {
+        pixPendentes.push({
+          seq: tx.seq, data: tx.data, hora: tx.hora, nome: tx.nome, valor: tx.valor,
+          motivo: 'Valor divergente (esperado R$ ' + (diaria||0).toFixed(2).replace('.',',') + ' · recebido R$ ' + tx.valor.toFixed(2).replace('.',',') + ')',
+          clienteSugerido: melhorCliente, scoreSugerido: melhorScore
+        });
+      }
+    } else {
+      var motivo = ativos.length === 0
+        ? 'Nenhum contrato ativo nesta data'
+        : melhorScore > 0
+          ? 'Nome nao reconhecido (melhor: ' + (melhorCliente ? melhorCliente.cliente.split(' ').slice(0,2).join(' ') : '?') + ' — ' + (melhorScore*100).toFixed(0) + '%)'
+          : 'Nenhum cliente encontrado';
+      pixPendentes.push({
+        seq: tx.seq, data: tx.data, hora: tx.hora, nome: tx.nome, valor: tx.valor,
+        motivo: motivo, clienteSugerido: melhorCliente, scoreSugerido: melhorScore
+      });
+    }
+  });
+
+  renderExtrato(transacoes);
+}
+
+function renderExtrato(transacoes) {
+  var cardsEl = document.getElementById('extrato-cards');
+  cardsEl.style.display = 'grid';
+  var totalVal = transacoes.reduce(function(s,t){ return s+t.valor; }, 0);
+  var autoConf = pixEncontrados.filter(function(p){ return p.autoConfirmado; }).length;
+
+  cardsEl.innerHTML =
+    '<div class="card blue"><div class="card-label">Pix Lidos</div><div class="card-value">' + transacoes.length + '</div></div>' +
+    '<div class="card green"><div class="card-label">Encontrados</div><div class="card-value">' + pixEncontrados.length + '</div><div class="card-sub">' + autoConf + ' auto-confirmados</div></div>' +
+    '<div class="card red"><div class="card-label">Pendentes</div><div class="card-value">' + pixPendentes.length + '</div></div>' +
+    '<div class="card"><div class="card-label">Total Recebido</div><div class="card-value">R$ ' + totalVal.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div></div>';
+
+  document.getElementById('extrato-resultados').style.display = 'block';
+  document.getElementById('extrato-drop').style.display = 'none';
+
+  // ENCONTRADOS
+  var tbEn = document.getElementById('extrato-encontrados');
+  if (!pixEncontrados.length) {
+    tbEn.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--muted)">Nenhum cliente identificado</td></tr>';
+  } else {
+    tbEn.innerHTML = pixEncontrados.map(function(p, idx) {
+      var statusBaixa = '';
+      if (p.salvo) {
+        // Mostra painel de multa inline
+        statusBaixa =
+          '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' +
+            '<span class="badge badge-ok">✅ Diaria ' + p.novaDiaria + '/20</span>' +
+            '<span style="font-size:.72rem;color:var(--muted)">Multa?</span>' +
+            '<button onclick="registrarMulta(' + idx + ','20')" style="background:rgba(255,107,53,.15);color:var(--accent2);border:1px solid var(--accent2);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer">+R$20</button>' +
+            '<button onclick="registrarMulta(' + idx + ','dobra')" style="background:rgba(255,77,109,.15);color:var(--red);border:1px solid var(--red);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer">+Dobra</button>' +
+            (p.multa20 ? '<span class="badge badge-warn">R$20 x' + p.multa20 + '</span>' : '') +
+            (p.multadobra ? '<span class="badge badge-danger">Dobra x' + p.multadobra + '</span>' : '') +
+          '</div>';
+      } else if (p.autoConfirmado) {
+        statusBaixa = '<span class="badge badge-info">⚡ Auto — clique Confirmar Todos</span>';
+      } else {
+        statusBaixa = '<button class="btn sm green-btn" onclick="confirmarUm(' + idx + ')">Confirmar</button>';
+      }
+
+      return '<tr id="erow-' + idx + '">' +
+        '<td class="cpf-cell">' + p.seq + '</td>' +
+        '<td class="cpf-cell">' + p.data + (p.hora?' '+p.hora:'') + '</td>' +
+        '<td style="font-size:.8rem">' + p.nome + '</td>' +
+        '<td><div style="font-family:var(--font-head);font-weight:700;font-size:.82rem">' + p.cliente.cliente + '</div>' +
+          '<div style="font-size:.7rem;color:var(--muted)">' + (p.score*100).toFixed(0) + '% similaridade' + (p.autoConfirmado?' · ⚡ auto':'') + '</div></td>' +
+        '<td class="money neu">R$ ' + p.valor.toFixed(2).replace('.',',') + '</td>' +
+        '<td class="cpf-cell">' + (p.cliente.diarias||0) + '/20</td>' +
+        '<td><strong style="color:var(--green)">' + p.novaDiaria + '/20</strong></td>' +
+        '<td>' + statusBaixa + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // NAO ENCONTRADOS
+  var tbNe = document.getElementById('extrato-nao-encontrados');
+  if (!pixPendentes.length) {
+    tbNe.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--muted)">Todos os Pix foram identificados ✅</td></tr>';
+  } else {
+    tbNe.innerHTML = pixPendentes.map(function(p, idx) {
+      var opts = '<option value="">— vincular manualmente —</option>' +
+        allData.map(function(r){ return '<option value="' + r._row + '">' + r.cliente.split(' ').slice(0,3).join(' ') + '</option>'; }).join('');
+      return '<tr>' +
+        '<td class="cpf-cell">' + p.seq + '</td>' +
+        '<td class="cpf-cell">' + p.data + (p.hora?' '+p.hora:'') + '</td>' +
+        '<td style="font-size:.8rem">' + p.nome + '</td>' +
+        '<td class="money neg">R$ ' + p.valor.toFixed(2).replace('.',',') + '</td>' +
+        '<td style="font-size:.75rem;color:var(--muted)">' + p.motivo + '</td>' +
+        '<td><select onchange="vincularManual(' + idx + ', this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.3rem .5rem;color:var(--text);font-size:.75rem;outline:none;max-width:180px">' + opts + '</select></td>' +
+      '</tr>';
+    }).join('');
+  }
+}
+
+async function confirmarUm(idx) {
+  var p = pixEncontrados[idx];
+  if (!p || p.salvo) return;
+  var updated = Object.assign({}, p.cliente, { diarias: p.novaDiaria });
+  showLoading('Salvando...');
+  try {
+    var res = await apiCall({ action:'update', record: encodeURIComponent(JSON.stringify(updated)) });
+    if (!res.ok) throw new Error(res.error);
+    var i = allData.findIndex(function(x){ return x._row === p.cliente._row; });
+    allData[i] = normalizeRecord(updated);
+    pixEncontrados[idx].salvo = true;
+    pixEncontrados[idx].multa20 = 0;
+    pixEncontrados[idx].multadobra = 0;
+    toast(p.cliente.cliente.split(' ')[0] + ' — Diaria ' + p.novaDiaria + '/20 ✓', 'success');
+    renderExtrato([].concat(pixEncontrados, pixPendentes));
+  } catch(err) { toast('Erro: ' + err.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+async function confirmarTodos() {
+  var pendentes = pixEncontrados.filter(function(p){ return !p.salvo; });
+  if (!pendentes.length) { toast('Todos ja foram salvos', 'info'); return; }
+  showLoading('Salvando ' + pendentes.length + ' baixas...');
+  var ok = 0, erros = 0;
+  for (var i = 0; i < pendentes.length; i++) {
+    var p = pendentes[i];
+    try {
+      var updated = Object.assign({}, p.cliente, { diarias: p.novaDiaria });
+      var res = await apiCall({ action:'update', record: encodeURIComponent(JSON.stringify(updated)) });
+      if (!res.ok) throw new Error(res.error);
+      var idx2 = allData.findIndex(function(x){ return x._row === p.cliente._row; });
+      allData[idx2] = normalizeRecord(updated);
+      p.salvo = true;
+      p.multa20 = 0;
+      p.multadobra = 0;
+      ok++;
+    } catch(e) { erros++; }
+  }
+  hideLoading();
+  toast(ok + ' baixas confirmadas' + (erros?' · '+erros+' erros':''), ok>0?'success':'error');
+  renderExtrato([].concat(pixEncontrados, pixPendentes));
+  renderCards(); filterData();
+  setSyncStatus('ok', 'Salvo ' + new Date().toLocaleTimeString('pt-BR'));
+}
+
+async function registrarMulta(idx, tipo) {
+  var p = pixEncontrados[idx];
+  if (!p || !p.salvo) return;
+  var r = allData.find(function(x){ return x._row === p.cliente._row; });
+  if (!r) return;
+
+  if (tipo === '20') {
+    pixEncontrados[idx].multa20 = (p.multa20||0) + 1;
+  } else {
+    pixEncontrados[idx].multadobra = (p.multadobra||0) + 1;
+  }
+
+  var updated = Object.assign({}, r, {
+    multa20:    pixEncontrados[idx].multa20    || r.multa20,
+    multadobra: pixEncontrados[idx].multadobra || r.multadobra
+  });
+
+  showLoading('Salvando multa...');
+  try {
+    var res = await apiCall({ action:'update', record: encodeURIComponent(JSON.stringify(updated)) });
+    if (!res.ok) throw new Error(res.error);
+    var i2 = allData.findIndex(function(x){ return x._row === r._row; });
+    allData[i2] = normalizeRecord(updated);
+    toast('Multa registrada ✓', 'success');
+    renderExtrato([].concat(pixEncontrados, pixPendentes));
+  } catch(err) { toast('Erro: ' + err.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+function vincularManual(idxPendente, rowStr) {
+  if (!rowStr) return;
+  var row = parseInt(rowStr);
+  var p   = pixPendentes[idxPendente];
+  var cli = allData.find(function(x){ return x._row === row; });
+  if (!cli) return;
+  pixEncontrados.push({
+    seq: p.seq, data: p.data, hora: p.hora, nome: p.nome, valor: p.valor,
+    cliente: cli, score: 1, autoConfirmado: false,
+    novaDiaria: Math.min(20, (parseInt(cli.diarias)||0) + 1),
+    salvo: false, multa20: 0, multadobra: 0
+  });
+  pixPendentes.splice(idxPendente, 1);
+  renderExtrato([].concat(pixEncontrados, pixPendentes));
+  toast(cli.cliente.split(' ')[0] + ' vinculado', 'info');
+}
+</script>
